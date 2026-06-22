@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRK AI Project Control Tower</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0B1929; color: #e8f0fe; }
+:root {
+  --navy: #0B1929; --navy2: #112240; --navy3: #1A3356;
+  --accent: #1E90C8; --accent2: #2EAAE2;
+  --text: #e8f0fe; --text2: #9bb8d4;
+  --border: rgba(30,144,200,0.18); --card: #112240;
+}
+.hdr { background: linear-gradient(135deg, #0B1929 0%, #1A3356 100%); border-bottom: 1px solid var(--border); padding: 20px 28px 16px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 10px; }
+.hdr h1 { font-size: 22px; font-weight: 600; color: #fff; letter-spacing: 0.5px; }
+.hdr p { font-size: 13px; color: var(--text2); margin-top: 3px; }
+.week-badge { background: var(--navy3); border: 1px solid var(--border); border-radius: 6px; padding: 6px 16px; font-size: 12px; color: var(--accent2); }
+.main { padding: 24px 28px; max-width: 1400px; margin: 0 auto; }
+.section-title { font-size: 11px; font-weight: 600; color: var(--accent2); letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.json-editor { background: #0a1520; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 28px; }
+.json-header { background: var(--navy3); padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+.json-header span { font-size: 12px; color: var(--text2); }
+.json-controls { display: flex; gap: 8px; }
+.json-controls button { border-radius: 5px; padding: 5px 16px; font-size: 12px; cursor: pointer; border: none; }
+.btn-apply { background: var(--accent); color: #fff; }
+.btn-reset { background: var(--navy3); border: 1px solid var(--border) !important; color: var(--text2); }
+textarea.json-input { width: 100%; height: 220px; background: #0a1520; border: none; color: #64d8ff; font-family: 'Courier New', monospace; font-size: 11px; padding: 14px 16px; resize: vertical; outline: none; line-height: 1.6; }
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 28px; }
+.kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.kpi-label { font-size: 11px; color: var(--text2); margin-bottom: 6px; }
+.kpi-value { font-size: 26px; font-weight: 600; color: #fff; }
+.kpi-card.green .kpi-value { color: #2ecc71; }
+.kpi-card.yellow .kpi-value { color: #f1c40f; }
+.kpi-card.red .kpi-value { color: #e74c3c; }
+.kpi-card.blue .kpi-value { color: var(--accent2); }
+.decisions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 28px; }
+.decision-card { background: #1a0a0a; border: 1px solid rgba(200,50,50,0.4); border-radius: 10px; padding: 14px 16px; }
+.decision-card.approved { background: #0a1a0d; border-color: rgba(46,204,113,0.4); }
+.decision-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.decision-title { font-size: 13px; font-weight: 600; color: #fff; }
+.status-pill { font-size: 10px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+.status-pill.pending { background: rgba(200,50,50,0.25); color: #e74c3c; border: 1px solid rgba(200,50,50,0.4); }
+.status-pill.approved { background: rgba(46,204,113,0.2); color: #2ecc71; border: 1px solid rgba(46,204,113,0.4); }
+.decision-item { font-size: 12px; color: var(--text2); padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 7px; }
+.decision-item:last-child { border-bottom: none; }
+.decision-item::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #e74c3c; flex-shrink: 0; }
+.decision-card.approved .decision-item::before { background: #2ecc71; }
+.portfolio-wrap { overflow-x: auto; margin-bottom: 28px; }
+.portfolio-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 700px; }
+.portfolio-table th { background: var(--navy3); color: var(--text2); font-weight: 600; font-size: 11px; text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); letter-spacing: 0.5px; white-space: nowrap; }
+.portfolio-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+.portfolio-table tr:hover td { background: rgba(30,144,200,0.06); }
+.badge { display: inline-block; font-size: 10px; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
+.badge.green { background: rgba(26,158,74,0.2); color: #2ecc71; border: 1px solid rgba(26,158,74,0.4); }
+.badge.yellow { background: rgba(212,160,23,0.2); color: #f1c40f; border: 1px solid rgba(212,160,23,0.4); }
+.badge.red { background: rgba(192,57,43,0.2); color: #e74c3c; border: 1px solid rgba(192,57,43,0.4); }
+.progress-bar-wrap { width: 90px; background: rgba(255,255,255,0.08); border-radius: 4px; height: 6px; overflow: hidden; display: inline-block; }
+.progress-bar-fill { height: 100%; border-radius: 4px; }
+.progress-bar-fill.green { background: #2ecc71; }
+.progress-bar-fill.yellow { background: #f1c40f; }
+.progress-bar-fill.red { background: #e74c3c; }
+.progress-bar-fill.blue { background: var(--accent2); }
+.pert-section { margin-bottom: 28px; }
+.pert-proj-title { font-size: 14px; color: var(--accent2); font-weight: 600; margin-bottom: 10px; padding: 8px 14px; background: rgba(30,144,200,0.08); border-radius: 6px; border-left: 3px solid var(--accent); }
+.pert-tasks { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 8px; margin-bottom: 16px; }
+.pert-task { background: var(--navy2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+.pert-task-name { font-size: 12px; color: var(--text); margin-bottom: 5px; font-weight: 500; }
+.pert-task-meta { font-size: 10px; color: var(--text2); margin-bottom: 6px; }
+.pert-progress { background: rgba(255,255,255,0.08); border-radius: 3px; height: 5px; overflow: hidden; margin-bottom: 4px; }
+.pert-progress-fill { height: 100%; border-radius: 3px; }
+.pert-owner { font-size: 10px; color: var(--text2); display: flex; justify-content: space-between; }
+.sep { height: 1px; background: var(--border); margin: 8px 0 20px; }
+.gantt-wrap { overflow-x: auto; margin-bottom: 28px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; }
+.gantt-table { min-width: 900px; width: 100%; border-collapse: collapse; font-size: 12px; }
+.gantt-table th { background: var(--navy3); color: var(--text2); font-size: 10px; font-weight: 600; padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.gantt-table td { padding: 5px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+.gantt-proj-row td { background: rgba(30,144,200,0.08); color: var(--accent2); font-weight: 600; font-size: 12px; }
+.gantt-bar { display: block; height: 14px; border-radius: 3px; }
+.gantt-bar.done { background: rgba(46,204,113,0.75); }
+.gantt-bar.active { background: rgba(241,196,15,0.75); }
+.gantt-bar.late { background: rgba(231,76,60,0.75); }
+.gantt-bar.planned { background: rgba(30,144,200,0.35); border: 1px solid var(--border); }
+.risk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 28px; }
+.risk-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.risk-proj { font-size: 12px; color: var(--accent2); margin-bottom: 8px; font-weight: 600; }
+.risk-item { display: flex; align-items: flex-start; gap: 7px; font-size: 12px; color: var(--text2); padding: 4px 0; }
+.risk-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+.risk-dot.high { background: #e74c3c; }
+.risk-dot.med { background: #f1c40f; }
+.risk-dot.low { background: #2ecc71; }
+.weekly-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 28px; }
+.weekly-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.weekly-proj { font-size: 12px; color: var(--accent2); margin-bottom: 8px; font-weight: 600; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+.weekly-section { margin-bottom: 8px; }
+.weekly-section-label { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+.weekly-item { font-size: 12px; color: var(--text); padding: 2px 0; display: flex; gap: 6px; }
+.weekly-item::before { content: '•'; color: var(--accent2); }
+.weekly-next { font-size: 12px; color: var(--text); padding: 3px 0; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.weekly-next:last-child { border-bottom: none; }
+.tabs { display: flex; gap: 2px; margin-bottom: 16px; background: var(--navy2); border-radius: 8px; padding: 3px; width: fit-content; }
+.tab { padding: 6px 18px; border-radius: 6px; font-size: 12px; cursor: pointer; color: var(--text2); border: none; background: none; }
+.tab.active { background: var(--accent); color: #fff; }
+.footer { text-align: center; padding: 20px; font-size: 11px; color: var(--text2); border-top: 1px solid var(--border); margin-top: 20px; }
+@media (max-width: 600px) { .main { padding: 16px; } .hdr { padding: 16px; } }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <h1>BRK AI Project Control Tower</h1>
+    <p>Executive Portfolio Dashboard</p>
+  </div>
+  <div class="week-badge" id="week-display">Week: —</div>
+</div>
+
+<div class="main">
+
+  <div class="section-title">JSON 데이터 입력 — 매주 업데이트</div>
+  <div class="json-editor">
+    <div class="json-header">
+      <span>주간 데이터를 수정하고 [적용] 버튼을 클릭하세요</span>
+      <div class="json-controls">
+        <button class="btn-reset" onclick="resetJson()">초기화</button>
+        <button class="btn-apply" onclick="applyJson()">적용 →</button>
+      </div>
+    </div>
+    <textarea class="json-input" id="json-input" spellcheck="false"></textarea>
+  </div>
+
+  <div class="section-title">Executive Summary — KPI</div>
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <div class="section-title">임원 의사결정 필요</div>
+  <div class="decisions-grid" id="decisions-grid"></div>
+
+  <div class="section-title">프로젝트 포트폴리오</div>
+  <div class="portfolio-wrap">
+    <table class="portfolio-table">
+      <thead><tr>
+        <th>프로젝트명</th><th>진행률</th><th>상태</th>
+        <th>목표일</th><th>현재단계</th><th>담당자</th><th>리스크</th>
+      </tr></thead>
+      <tbody id="portfolio-body"></tbody>
+    </table>
+  </div>
+
+  <div class="section-title">프로젝트별 WBS / PERT</div>
+  <div class="pert-section" id="pert-section"></div>
+
+  <div class="section-title">Gantt Chart</div>
+  <div class="gantt-wrap"><table class="gantt-table" id="gantt-table"></table></div>
+
+  <div class="section-title">리스크 관리</div>
+  <div class="risk-grid" id="risk-grid"></div>
+
+  <div class="section-title">금주 실적 / 차주 계획</div>
+  <div class="tabs">
+    <button class="tab active" onclick="showWeekly('this',this)">금주 실적</button>
+    <button class="tab" onclick="showWeekly('next',this)">차주 계획</button>
+  </div>
+  <div class="weekly-grid" id="weekly-grid"></div>
+
+</div>
+
+<div class="footer">BRK AI Project Control Tower · Generated by Claude · 매주 JSON 업데이트로 자동 갱신</div>
+
+<script>
+const DEFAULT_DATA = {
+  "week": "2026-06-22",
+  "projects": [
+    {
+      "name": "댓글몽 AI POC",
+      "owner": "김지훈",
+      "status": "Green",
+      "targetDate": "2026-08-31",
+      "currentPhase": "실적 모니터링",
+      "risk": "일정 지연",
+      "riskLevel": "med",
+      "decisionRequired": false,
+      "tasks": [
+        {"name":"평가 데이터 추출","start":"2026-04-01","end":"2026-04-20","progress":100,"status":"Green","owner":"김지훈"},
+        {"name":"대시보드 구축","start":"2026-04-21","end":"2026-05-10","progress":100,"status":"Green","owner":"김지훈"},
+        {"name":"진행현황 모니터링","start":"2026-05-11","end":"2026-05-31","progress":100,"status":"Green","owner":"김지훈"},
+        {"name":"BR/DD 계정 교육","start":"2026-06-01","end":"2026-06-15","progress":100,"status":"Green","owner":"이민준"},
+        {"name":"실적 모니터링","start":"2026-06-16","end":"2026-07-15","progress":60,"status":"Yellow","owner":"이민준"},
+        {"name":"DID 분석","start":"2026-07-16","end":"2026-07-31","progress":0,"status":"Gray","owner":"이민준"},
+        {"name":"성과 분석","start":"2026-08-01","end":"2026-08-15","progress":0,"status":"Gray","owner":"김지훈"},
+        {"name":"확대 적용 검토","start":"2026-08-16","end":"2026-08-31","progress":0,"status":"Gray","owner":"김지훈"}
+      ],
+      "thisWeek": {"completed":["실적 모니터링 중간 점검","BR 계정 데이터 검증"],"achievements":"댓글 분류 정확도 87% 달성","issues":"일부 계정 데이터 누락 발견"},
+      "nextWeek": [{"task":"DID 분석 준비","deadline":"2026-07-19"},{"task":"누락 데이터 보완","deadline":"2026-06-26"}],
+      "risks": [{"level":"med","desc":"일부 계정 데이터 품질 이슈"},{"level":"low","desc":"분석 일정 1주 지연 가능성"}]
+    },
+    {
+      "name": "DD AI Partner",
+      "owner": "박수연",
+      "status": "Green",
+      "targetDate": "2026-09-30",
+      "currentPhase": "업무 프로세스 분석",
+      "risk": "없음",
+      "riskLevel": "low",
+      "decisionRequired": false,
+      "tasks": [
+        {"name":"요구사항 정의","start":"2026-04-01","end":"2026-04-30","progress":100,"status":"Green","owner":"박수연"},
+        {"name":"업무 프로세스 분석","start":"2026-05-01","end":"2026-06-30","progress":70,"status":"Yellow","owner":"박수연"},
+        {"name":"Agent 시나리오 설계","start":"2026-07-01","end":"2026-07-31","progress":0,"status":"Gray","owner":"박수연"},
+        {"name":"DD 보고체계 구축","start":"2026-08-01","end":"2026-08-20","progress":0,"status":"Gray","owner":"최도현"},
+        {"name":"사용자 검증","start":"2026-08-21","end":"2026-09-05","progress":0,"status":"Gray","owner":"최도현"},
+        {"name":"개선사항 반영","start":"2026-09-06","end":"2026-09-20","progress":0,"status":"Gray","owner":"박수연"},
+        {"name":"운영 전환","start":"2026-09-21","end":"2026-09-30","progress":0,"status":"Gray","owner":"박수연"}
+      ],
+      "thisWeek": {"completed":["매장 운영 프로세스 인터뷰 완료","As-Is 흐름도 작성"],"achievements":"핵심 자동화 포인트 12개 식별","issues":"없음"},
+      "nextWeek": [{"task":"Agent 시나리오 초안 작성","deadline":"2026-07-01"},{"task":"이해관계자 검토 미팅","deadline":"2026-06-27"}],
+      "risks": [{"level":"low","desc":"시나리오 설계 범위 조정 가능"}]
+    },
+    {
+      "name": "AI 챗봇 파일럿",
+      "owner": "정현아",
+      "status": "Yellow",
+      "targetDate": "2026-10-31",
+      "currentPhase": "데이터 정제",
+      "risk": "벤더 대응 지연",
+      "riskLevel": "med",
+      "decisionRequired": false,
+      "tasks": [
+        {"name":"챗봇 시나리오 정의","start":"2026-04-15","end":"2026-05-15","progress":100,"status":"Green","owner":"정현아"},
+        {"name":"데이터 정제","start":"2026-05-16","end":"2026-07-15","progress":45,"status":"Yellow","owner":"정현아"},
+        {"name":"Agent 개발","start":"2026-07-16","end":"2026-08-31","progress":0,"status":"Gray","owner":"윤재원"},
+        {"name":"대시보드 연계","start":"2026-09-01","end":"2026-09-15","progress":0,"status":"Gray","owner":"윤재원"},
+        {"name":"업무효율화 검증","start":"2026-09-16","end":"2026-09-30","progress":0,"status":"Gray","owner":"정현아"},
+        {"name":"사용자 테스트","start":"2026-10-01","end":"2026-10-15","progress":0,"status":"Gray","owner":"정현아"},
+        {"name":"오픈","start":"2026-10-16","end":"2026-10-20","progress":0,"status":"Gray","owner":"윤재원"},
+        {"name":"운영 모니터링","start":"2026-10-21","end":"2026-10-31","progress":0,"status":"Gray","owner":"윤재원"}
+      ],
+      "thisWeek": {"completed":["FAQ 데이터 1차 수집 완료","데이터 분류 기준 수립"],"achievements":"3,200개 FAQ 항목 확보","issues":"외부 벤더 API 문서 수령 지연"},
+      "nextWeek": [{"task":"데이터 정제 2차 작업","deadline":"2026-06-27"},{"task":"벤더 API 문서 재요청","deadline":"2026-06-23"}],
+      "risks": [{"level":"med","desc":"벤더 API 문서 수령 지연"},{"level":"low","desc":"데이터 품질 재검토 필요"}]
+    },
+    {
+      "name": "DD AI Bakery Scanner",
+      "owner": "한승민",
+      "status": "Green",
+      "targetDate": "2026-08-15",
+      "currentPhase": "AI 학습",
+      "risk": "없음",
+      "riskLevel": "low",
+      "decisionRequired": false,
+      "tasks": [
+        {"name":"제품 데이터 수집","start":"2026-04-01","end":"2026-04-30","progress":100,"status":"Green","owner":"한승민"},
+        {"name":"AI 학습","start":"2026-05-01","end":"2026-06-30","progress":80,"status":"Green","owner":"한승민"},
+        {"name":"신제품 테스트","start":"2026-07-01","end":"2026-07-10","progress":0,"status":"Gray","owner":"강나라"},
+        {"name":"정확도 측정","start":"2026-07-11","end":"2026-07-18","progress":0,"status":"Gray","owner":"강나라"},
+        {"name":"속도 측정","start":"2026-07-19","end":"2026-07-25","progress":0,"status":"Gray","owner":"강나라"},
+        {"name":"개선학습","start":"2026-07-26","end":"2026-08-05","progress":0,"status":"Gray","owner":"한승민"},
+        {"name":"현장 적용 검증","start":"2026-08-06","end":"2026-08-12","progress":0,"status":"Gray","owner":"한승민"},
+        {"name":"POC 결과 보고","start":"2026-08-13","end":"2026-08-15","progress":0,"status":"Gray","owner":"한승민"}
+      ],
+      "thisWeek": {"completed":["추가 제품 이미지 2,000장 수집","모델 2차 학습 완료"],"achievements":"인식 정확도 93.5% 달성","issues":"없음"},
+      "nextWeek": [{"task":"3차 학습 데이터 추가 수집","deadline":"2026-06-27"},{"task":"신제품 테스트 환경 준비","deadline":"2026-06-30"}],
+      "risks": [{"level":"low","desc":"신제품 출시 일정 변동 가능성"}]
+    },
+    {
+      "name": "CRM/CDP 구축 검토",
+      "owner": "송민하",
+      "status": "Yellow",
+      "targetDate": "2026-07-30",
+      "currentPhase": "S9 수정안 검토",
+      "risk": "의사결정 대기",
+      "riskLevel": "high",
+      "decisionRequired": true,
+      "decisions": [
+        {"item":"S9 수정안 검토","status":"pending"},
+        {"item":"POC 범위 승인","status":"pending"},
+        {"item":"POC 예산 승인","status":"pending"}
+      ],
+      "tasks": [
+        {"name":"CRM 요구사항 정리","start":"2026-03-01","end":"2026-03-20","progress":100,"status":"Green","owner":"송민하"},
+        {"name":"Salesforce 미팅","start":"2026-03-21","end":"2026-03-31","progress":100,"status":"Green","owner":"송민하"},
+        {"name":"CRM 레퍼런스 조사","start":"2026-04-01","end":"2026-04-20","progress":100,"status":"Green","owner":"박지은"},
+        {"name":"CDP 벤더 분석","start":"2026-04-21","end":"2026-05-31","progress":100,"status":"Green","owner":"박지은"},
+        {"name":"S9 1차 미팅","start":"2026-06-01","end":"2026-06-10","progress":100,"status":"Green","owner":"송민하"},
+        {"name":"S9 수정 제안 수령","start":"2026-06-11","end":"2026-06-24","progress":80,"status":"Yellow","owner":"송민하"},
+        {"name":"수정된 POC 정의","start":"2026-06-25","end":"2026-07-05","progress":0,"status":"Gray","owner":"송민하"},
+        {"name":"POC 비용 산출","start":"2026-07-06","end":"2026-07-15","progress":0,"status":"Gray","owner":"박지은"},
+        {"name":"본사업 비용 산출","start":"2026-07-16","end":"2026-07-22","progress":0,"status":"Gray","owner":"박지은"},
+        {"name":"ROI 분석","start":"2026-07-23","end":"2026-07-27","progress":0,"status":"Gray","owner":"송민하"},
+        {"name":"추진 여부 결정","start":"2026-07-28","end":"2026-07-30","progress":0,"status":"Gray","owner":"송민하"}
+      ],
+      "thisWeek": {"completed":["S9 1차 미팅 완료","수정 제안 초안 수령"],"achievements":"POC 범위 협의 완료","issues":"S9 최종 수정안 수령 지연 (6/24 → 6/27 예상)"},
+      "nextWeek": [{"task":"S9 최종 수정안 검토","deadline":"2026-06-28"},{"task":"POC 정의 작성 착수","deadline":"2026-06-30"}],
+      "risks": [{"level":"high","desc":"S9 수정안 수령 지연"},{"level":"high","desc":"임원 의사결정 대기로 일정 압박"},{"level":"med","desc":"예산 승인 절차 소요시간"}]
+    },
+    {
+      "name": "AI Tech Value Chain",
+      "owner": "오태양",
+      "status": "Green",
+      "targetDate": "2026-12-31",
+      "currentPhase": "공장/본사 자동화 분석",
+      "risk": "로드맵 승인 대기",
+      "riskLevel": "med",
+      "decisionRequired": true,
+      "decisions": [
+        {"item":"로드맵 승인","status":"pending"}
+      ],
+      "tasks": [
+        {"name":"현행 프로세스 분석","start":"2026-04-01","end":"2026-05-31","progress":100,"status":"Green","owner":"오태양"},
+        {"name":"공장 자동화 To-Be","start":"2026-06-01","end":"2026-06-30","progress":70,"status":"Green","owner":"오태양"},
+        {"name":"본사 자동화 To-Be","start":"2026-06-01","end":"2026-06-30","progress":60,"status":"Green","owner":"이가람"},
+        {"name":"점포 자동화 To-Be","start":"2026-07-01","end":"2026-07-31","progress":0,"status":"Gray","owner":"이가람"},
+        {"name":"AI 활용영역 정의","start":"2026-08-01","end":"2026-08-31","progress":0,"status":"Gray","owner":"오태양"},
+        {"name":"Robot 활용영역 정의","start":"2026-08-01","end":"2026-08-31","progress":0,"status":"Gray","owner":"오태양"},
+        {"name":"로드맵 수립","start":"2026-09-01","end":"2026-10-31","progress":0,"status":"Gray","owner":"오태양"},
+        {"name":"투자계획 수립","start":"2026-11-01","end":"2026-11-30","progress":0,"status":"Gray","owner":"이가람"},
+        {"name":"최종 보고","start":"2026-12-01","end":"2026-12-31","progress":0,"status":"Gray","owner":"오태양"}
+      ],
+      "thisWeek": {"completed":["공장 자동화 현황 인터뷰 3개소 완료","본사 프로세스 맵핑 70% 완료"],"achievements":"자동화 가능 공정 18개 도출","issues":"없음"},
+      "nextWeek": [{"task":"공장 자동화 To-Be 초안 완성","deadline":"2026-06-30"},{"task":"본사 자동화 To-Be 완성","deadline":"2026-06-30"}],
+      "risks": [{"level":"med","desc":"로드맵 승인 일정 불확실"},{"level":"low","desc":"외부 Robot 벤더 자료 취합 지연"}]
+    }
+  ]
+};
+
+let currentData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+let weeklyMode = 'this';
+
+function resetJson() {
+  document.getElementById('json-input').value = JSON.stringify(DEFAULT_DATA, null, 2);
+}
+function applyJson() {
+  try {
+    currentData = JSON.parse(document.getElementById('json-input').value);
+    render();
+  } catch(e) { alert('JSON 형식 오류: ' + e.message); }
+}
+function calcProgress(tasks) {
+  if (!tasks || !tasks.length) return 0;
+  return Math.round(tasks.reduce((s,t) => s + (t.progress||0), 0) / tasks.length);
+}
+function statusColor(s) {
+  return s==='Green'?'green':s==='Red'?'red':'yellow';
+}
+function render() {
+  const d = currentData;
+  document.getElementById('week-display').textContent = 'Week: ' + (d.week||'');
+  document.getElementById('json-input').value = JSON.stringify(d, null, 2);
+  const projs = d.projects || [];
+  const total = projs.length;
+  const green = projs.filter(p=>p.status==='Green').length;
+  const yellow = projs.filter(p=>p.status==='Yellow').length;
+  const red = projs.filter(p=>p.status==='Red').length;
+  const dec = projs.filter(p=>p.decisionRequired).length;
+  const allTasks = projs.flatMap(p=>p.tasks||[]);
+  const doneThis = allTasks.filter(t=>t.progress===100).length;
+  const today = new Date(d.week||Date.now());
+  const nextWE = new Date(today); nextWE.setDate(today.getDate()+7);
+  const nextDL = projs.flatMap(p=>(p.nextWeek||[]).map(n=>new Date(n.deadline))).filter(dt=>dt<=nextWE).length;
+  const avgP = total ? Math.round(projs.reduce((s,p)=>s+calcProgress(p.tasks),0)/total) : 0;
+  const kpis = [
+    {label:'전체 프로젝트',val:total,cls:''},
+    {label:'정상 진행',val:green,cls:'green'},
+    {label:'주의',val:yellow,cls:'yellow'},
+    {label:'지연',val:red,cls:'red'},
+    {label:'의사결정 필요',val:dec,cls:'red'},
+    {label:'금주 완료 Task',val:doneThis,cls:'blue'},
+    {label:'차주 마감 Task',val:nextDL,cls:'blue'},
+    {label:'평균 진행률',val:avgP+'%',cls:'blue'}
+  ];
+  document.getElementById('kpi-grid').innerHTML = kpis.map(k=>
+    `<div class="kpi-card ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.val}</div></div>`
+  ).join('');
+  const decProjs = projs.filter(p=>p.decisionRequired&&p.decisions);
+  document.getElementById('decisions-grid').innerHTML = decProjs.length ? decProjs.map(p=>{
+    const allA = (p.decisions||[]).every(d2=>d2.status==='approved');
+    return `<div class="decision-card ${allA?'approved':''}">
+      <div class="decision-header">
+        <span class="decision-title">${p.name}</span>
+        <span class="status-pill ${allA?'approved':'pending'}">${allA?'Approved':'Pending'}</span>
+      </div>
+      ${(p.decisions||[]).map(d2=>`<div class="decision-item">${d2.item}</div>`).join('')}
+    </div>`;
+  }).join('') : '<div style="color:#9bb8d4;font-size:13px;padding:12px 0">현재 의사결정 대기 항목이 없습니다.</div>';
+  document.getElementById('portfolio-body').innerHTML = projs.map(p=>{
+    const prog = calcProgress(p.tasks);
+    const sc = statusColor(p.status);
+    const rc = p.riskLevel==='high'?'#e74c3c':p.riskLevel==='med'?'#f1c40f':'#2ecc71';
+    return `<tr>
+      <td style="font-weight:500">${p.name}</td>
+      <td><div style="display:flex;align-items:center;gap:8px">
+        <div class="progress-bar-wrap"><div class="progress-bar-fill ${sc}" style="width:${prog}%"></div></div>
+        <span style="font-size:12px;color:#9bb8d4">${prog}%</span>
+      </div></td>
+      <td><span class="badge ${sc}">${p.status}</span></td>
+      <td style="font-size:12px;color:#9bb8d4">${p.targetDate}</td>
+      <td style="font-size:12px">${p.currentPhase||'-'}</td>
+      <td style="font-size:12px;color:#9bb8d4">${p.owner}</td>
+      <td style="font-size:12px;color:${rc}">${p.risk||'-'}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('pert-section').innerHTML = projs.map(p=>{
+    const tasks = p.tasks||[];
+    return `<div>
+      <div class="pert-proj-title">${p.name} &nbsp;·&nbsp; 진행률 ${calcProgress(tasks)}%</div>
+      <div class="pert-tasks">${tasks.map(t=>{
+        const bc = t.progress===100?'#2ecc71':t.status==='Yellow'?'#f1c40f':t.status==='Red'?'#e74c3c':'#1E90C8';
+        return `<div class="pert-task">
+          <div class="pert-task-name">${t.name}</div>
+          <div class="pert-task-meta">${t.start} ~ ${t.end}</div>
+          <div class="pert-progress"><div class="pert-progress-fill" style="width:${t.progress}%;background:${bc}"></div></div>
+          <div class="pert-owner"><span>${t.owner||''}</span><span style="color:${bc}">${t.progress}%</span></div>
+        </div>`;
+      }).join('')}</div><div class="sep"></div>
+    </div>`;
+  }).join('');
+  renderGantt(projs);
+  renderRisks(projs);
+  renderWeekly(projs, weeklyMode);
+}
+function renderGantt(projs) {
+  const allDates = projs.flatMap(p=>(p.tasks||[]).flatMap(t=>[new Date(t.start),new Date(t.end)]));
+  if (!allDates.length) return;
+  const minD = new Date(Math.min(...allDates));
+  const maxD = new Date(Math.max(...allDates));
+  const totalDays = Math.ceil((maxD-minD)/86400000)+1;
+  const months=[];
+  let cur = new Date(minD); cur.setDate(1);
+  while(cur<=maxD){ months.push(new Date(cur)); cur.setMonth(cur.getMonth()+1); }
+  let html = `<thead><tr><th style="width:150px;text-align:left">프로젝트 / Task</th><th style="width:50px">진행률</th>`;
+  months.forEach(m=>{
+    html+=`<th colspan="4" style="text-align:center">${m.getFullYear()}.${String(m.getMonth()+1).padStart(2,'0')}</th>`;
+  });
+  html+='</tr></thead><tbody>';
+  projs.forEach(p=>{
+    html+=`<tr class="gantt-proj-row"><td colspan="${2+months.length*4}" style="padding-left:10px">${p.name}</td></tr>`;
+    (p.tasks||[]).forEach(t=>{
+      const s=new Date(t.start),e=new Date(t.end);
+      const off=Math.round((s-minD)/86400000);
+      const dur=Math.round((e-s)/86400000)+1;
+      const lp=(off/totalDays*100).toFixed(1)+'%';
+      const wp=(dur/totalDays*100).toFixed(1)+'%';
+      const cls=t.progress===100?'done':t.status==='Red'?'late':t.progress>0||t.status==='Yellow'?'active':'planned';
+      html+=`<tr><td style="font-size:11px;color:#9bb8d4;padding-left:20px">${t.name}</td>
+        <td style="font-size:11px;text-align:right;color:#9bb8d4">${t.progress}%</td>
+        <td colspan="${months.length*4}" style="padding:4px 6px">
+          <div style="position:relative;height:18px;background:rgba(255,255,255,0.04);border-radius:3px">
+            <div class="gantt-bar ${cls}" style="position:absolute;left:${lp};width:${wp};min-width:4px;top:2px"></div>
+          </div>
+        </td></tr>`;
+    });
+  });
+  html+='</tbody>';
+  document.getElementById('gantt-table').innerHTML = html;
+}
+function renderRisks(projs) {
+  document.getElementById('risk-grid').innerHTML = projs.map(p=>{
+    const risks=p.risks||[];
+    if(!risks.length) return '';
+    return `<div class="risk-card"><div class="risk-proj">${p.name}</div>
+      ${risks.map(r=>`<div class="risk-item"><div class="risk-dot ${r.level}"></div><span>${r.desc}</span></div>`).join('')}
+    </div>`;
+  }).filter(Boolean).join('');
+}
+function showWeekly(mode, btn) {
+  weeklyMode = mode;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  renderWeekly(currentData.projects||[], mode);
+}
+function renderWeekly(projs, mode) {
+  document.getElementById('weekly-grid').innerHTML = projs.map(p=>{
+    if(mode==='this'){
+      const tw=p.thisWeek||{};
+      return `<div class="weekly-card"><div class="weekly-proj">${p.name}</div>
+        <div class="weekly-section"><div class="weekly-section-label">완료 Task</div>
+          ${(tw.completed||[]).map(c=>`<div class="weekly-item">${c}</div>`).join('')}</div>
+        ${tw.achievements?`<div class="weekly-section"><div class="weekly-section-label">성과</div><div style="font-size:12px">${tw.achievements}</div></div>`:''}
+        ${tw.issues?`<div class="weekly-section"><div class="weekly-section-label" style="color:#f1c40f">이슈</div><div style="font-size:12px;color:#f1c40f">${tw.issues}</div></div>`:''}
+      </div>`;
+    } else {
+      const nw=p.nextWeek||[];
+      return `<div class="weekly-card"><div class="weekly-proj">${p.name}</div>
+        ${nw.map(n=>`<div class="weekly-next"><span style="font-size:12px">${n.task}</span><span style="font-size:11px;color:#9bb8d4">${n.deadline}</span></div>`).join('')}
+      </div>`;
+    }
+  }).join('');
+}
+document.getElementById('json-input').value = JSON.stringify(DEFAULT_DATA, null, 2);
+render();
+</script>
+</body>
+</html>
